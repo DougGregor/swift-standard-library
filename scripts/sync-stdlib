@@ -2,8 +2,10 @@
 
 python3 ./scripts/sync-from-upstream.py --repo https://github.com/DougGregor/swift.git --branch embedded-swift-stdlib-package \
 --path LICENSE.txt \
---path Package.swift \
---path Plugins \
 --path stdlib/public \
+--path stdlib/include \
+--path include/swift/Basic \
+--path include/swift/ABI \
+--path include/swift/Runtime \
 --path utils/gyb --path utils/gyb.py \
 --path utils/SwiftAtomics.py --path utils/SwiftFloatingPointTypes.py --path utils/SwiftIntTypes.py
