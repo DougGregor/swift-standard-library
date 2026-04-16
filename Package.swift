@@ -21,10 +21,17 @@ import CompilerPluginSupport
 import Foundation
 import PackageDescription
 
+let availabilitySettings: [SwiftSetting] = try!
+  availabilityMacros.map { macro in
+    .unsafeFlags([
+        "-Xfrontend", "-define-availability", "-Xfrontend", "\(macro)"
+    ])
+  }
+
 // Common Swift settings for the Standard Library and its various supporting
 // libraries. This was extracted from CMakeLists.txt and likely contains some
 // stale settings.
-let basicSwiftSettings: [SwiftSetting] = try! [
+let basicSwiftSettings: [SwiftSetting] = [
   .enableExperimentalFeature("NoncopyableGenerics2"),
   .enableExperimentalFeature("SE427NoInferenceOnExtension"),
   .enableExperimentalFeature("NonescapableTypes"),
@@ -41,11 +48,7 @@ let basicSwiftSettings: [SwiftSetting] = try! [
       "-Xfrontend", "-emit-empty-object-file",
       "-nostdimport", "-nostdlibimport",
     ])
-] + availabilityMacros.map { macro in
-  .unsafeFlags([
-      "-Xfrontend", "-define-availability", "-Xfrontend", "\(macro)"
-  ])
-}
+] + availabilitySettings
 
 let package = Package(
   name: "swift-standard-library",
@@ -252,14 +255,26 @@ let package = Package(
       ],
       publicHeadersPath: ".",
       cSettings: [
-        .headerSearchPath("../../../stdlib/public/"),
+        .headerSearchPath("../../../include/"),
+        .headerSearchPath("../../../stdlib/public/SwiftShims"),
+        .headerSearchPath("../../../config/include"),
+        .headerSearchPath("../../../stdlib/include"),
+        .define("SWIFT_TARGET_LIBRARY_NAME", to: "swift_Concurrency"),
+        .define("SWIFT_CONCURRENCY_EMBEDDED", to: "1"),
+        .define("SWIFT_RUNTIME_EMBEDDED", to: "1"),
       ],
       plugins: ["GYBPlugin"],
     ),
 
     .target(
+      name: "ConcurrencyShims",
+      path: "stdlib/public/Concurrency/InternalShims",
+      publicHeadersPath: "."
+    ),
+
+    .target(
       name: "_Concurrency",
-      dependencies: ["Swift", "Synchronization", "_ConcurrencyCpp"],
+      dependencies: ["ConcurrencyShims", "Swift", "Synchronization", "_ConcurrencyCpp"],
       path: "stdlib/public/Concurrency",
       sources: [
         "Actor.swift",
@@ -327,13 +342,19 @@ let package = Package(
         "TaskSleepDuration.swift",
         "UnimplementedExecutor.swift",
         "CooperativeExecutor.swift",
+        "PlatformExecutorCooperative.swift",
         "PlatformExecutorDarwin.swift",
         "PlatformExecutorLinux.swift",
         "PlatformExecutorWindows.swift",
         "PlatformExecutorOpenBSD.swift",
         "PlatformExecutorFreeBSD.swift",
       ],
-      swiftSettings: basicSwiftSettings,
+      swiftSettings: basicSwiftSettings + [
+        .enableExperimentalFeature("BuiltinModule"),
+        .unsafeFlags(["-parse-stdlib"]),
+        .define("SWIFT_CONCURRENCY_EMBEDDED"),
+        .unsafeFlags(["-runtime-compatibility-version", "none"]),
+      ],
       plugins: ["GYBPlugin"],
     ),
 
@@ -342,7 +363,8 @@ let package = Package(
       name: "GYBPlugin",
       capability: .buildTool(),
     ),
-  ]
+  ],
+  cxxLanguageStandard: .gnucxx17
 )
 
 // utils/availability-macros.def processing logic, used to figure out
@@ -386,7 +408,7 @@ var availabilityMacros: [String] {
 
       // Under embedded swift, all stdlib APIs should be available always.
       // Replace all availability macros with very very old OS version.      
-      return String(line[..<colonIndex]) + ":macOS 10.9, iOS 7.0, watchOS 2.0, tvOS 9.0, visionOS 1.0"
+      return String(line[..<colonIndex]) + ":*"
     }
 
     // Create "StdlibDeploymentTarget" counterparts for "SwiftStdlib"
