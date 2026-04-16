@@ -1,6 +1,6 @@
 #!/bin/bash
 
-python3 ./scripts/sync-from-upstream.py --repo https://github.com/DougGregor/swift.git --branch embedded-swift-stdlib-package \
+python3 ./scripts/sync-from-upstream.py --repo https://github.com/swiftlang/swift.git --branch main \
 --path LICENSE.txt \
 --path stdlib/public \
 --path stdlib/include \
