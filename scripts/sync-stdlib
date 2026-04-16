@@ -4,9 +4,15 @@ python3 ./scripts/sync-from-upstream.py --repo https://github.com/DougGregor/swi
 --path LICENSE.txt \
 --path stdlib/public \
 --path stdlib/include \
---path include/swift/Basic \
 --path include/swift/ABI \
+--path include/swift/AST/Ownership.h \
+--path include/swift/AST/ReferenceStorage.def \
+--path include/swift/Basic \
+--path include/swift/Concurrency \
+--path include/swift/Demangling \
+--path include/swift/RemoteInspection \
 --path include/swift/Runtime \
+--path include/swift/Strings.h \
 --path include/swift/Threading \
 --path utils/gyb --path utils/gyb.py \
 --path utils/SwiftAtomics.py --path utils/SwiftFloatingPointTypes.py --path utils/SwiftIntTypes.py
